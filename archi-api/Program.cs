@@ -3,7 +3,9 @@ using Archi.Entities;
 using Archi.Middleware;
 using Archi.Models;
 using Archi.Models.Validators;
-using archi_api.Services.Account;
+using Archi.Repository;
+using Archi.Services;
+using Archi.Services.Account;
 using FluentValidation;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -45,25 +47,41 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<DBSeeder>();
 builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 builder.Services.AddScoped<ErrorHandlingMiddleware>();
-builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddScoped<IValidator<RegisterUserDto>, RegisterUserDtoValidator>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowLocalhost",
+        builder => builder
+            .WithOrigins("http://localhost:8080", "http://localhost:3000", "http://localhost:5173")
+            .AllowAnyMethod()
+            .AllowAnyHeader());
+            //.AllowCredentials());
+});
 
 var app = builder.Build();
-
 var scope = app.Services.CreateScope();
 var seeder = scope.ServiceProvider.GetRequiredService<DBSeeder>();
-seeder.Seed();
+await seeder.SeedAsync();
 
-// Configure the HTTP request pipeline.
+
+app.UseCors("AllowLocalhost");
+
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

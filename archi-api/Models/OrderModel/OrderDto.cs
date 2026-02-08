@@ -1,4 +1,4 @@
-﻿namespace Archi.Models.OrderModel
+﻿namespace Archi.Models.OrderModel;
 
 public class OrderDto
 {

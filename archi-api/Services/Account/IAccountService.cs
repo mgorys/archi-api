@@ -1,10 +1,10 @@
 ﻿using Archi.Models;
 
-namespace archi_api.Services.Account
+namespace Archi.Services.Account
 {
     public interface IAccountService
     {
-        void RegisterUser(RegisterUserDto dto);
-        string GenerateJwt(LoginDto dto);
+        public Task RegisterUserAsync(RegisterUserDto dto);
+        public Task<string> GenerateJwtAsync(LoginDto dto);
     }
 }
