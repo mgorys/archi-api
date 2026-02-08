@@ -1,70 +1,43 @@
 ﻿using Archi.Entities;
 using Archi.Exceptions;
 using Archi.Models.OrderModel;
-using Archi.Services;
+using Archi.Repository;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
-namespace Phones.Services
+namespace Archi.Services
 {
     public class OrderService : IOrderService
     {
-        private readonly ArchiDbContext _dbContext;
-        private readonly IMapper _mapper;
+        private readonly IOrderRepository _orderRepository;
 
-        public OrderService(ArchiDbContext dbContext, IMapper mapper)
+        public OrderService(IOrderRepository orderRepository)
         {
-            _dbContext = dbContext;
-            _mapper = mapper;
+            _orderRepository = orderRepository;
         }
 
-        public int CreateOrder(CreateOrderDto dto)
+        public async Task<int> CreateOrderAsync(CreateOrderDto dto)
         {
-            var order = _mapper.Map<Order>(dto);
-
-            _dbContext.Orders.Add(order);
-            _dbContext.SaveChanges();
-
-            return order.Id;
+            return (await _orderRepository.CreateOrderAsync(dto));
         }
 
-        public void DeleteOrder(int id)
+        public async Task DeleteOrderAsync(int id)
         {
-            var order = _dbContext
-                 .Orders
-                 .FirstOrDefault(r => r.Id == id);
-            if (order is null)
-                throw new NotFoundException("Order not found");
-            _dbContext.Orders.Remove(order);
-            _dbContext.SaveChanges();
+            await _orderRepository.DeleteOrderAsync(id);
         }
 
-        public OrderDto GetById(int id)
+        public async Task<OrderDto> GetByIdAsync(int id)
         {
-            var order = _dbContext.Orders.FirstOrDefault(x => x.Id == id);
-            if (order is null)
-                throw new NotFoundException("Order not found");
-            var result = _mapper.Map<OrderDto>(order);
-            return result;
+            return await _orderRepository.GetByIdAsync(id);
         }
 
-        public void UpdateOrder(int id, UpdateOrderDto dto)
+        public async Task UpdateOrderAsync(int id, UpdateOrderDto dto)
         {
-            var order = _dbContext
-                  .Orders
-                  .FirstOrDefault(r => r.Id == id);
-            if (order is null)
-                throw new NotFoundException("Order not found");
-            order.Name = dto.Name;
-            
-            _dbContext.SaveChanges();
+            await _orderRepository.UpdateOrderAsync(id,dto);
         }
-
-        ActionResult<IEnumerable<Order>> IOrderService.GetAll()
+        public async Task<IEnumerable<Order>> GetAllAsync()
         {
-            var result = _dbContext.Orders.ToList();
-            return result;
+            return await _orderRepository.GetAllAsync();
         }
     }
 }

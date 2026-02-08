@@ -7,34 +7,43 @@ using Microsoft.IdentityModel.Tokens;
 using Archi.Entities;
 using Archi.Exceptions;
 using Archi.Models;
-using Archi;
 
-namespace archi_api.Services.Account;
+namespace Archi.Services.Account;
 
 public class AccountService : IAccountService
 {
-    private readonly ArchiDbContext _context;
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly AuthenticationSettings _authenticationSettings;
+    private readonly IAccountRepository _accountRepository;
 
-    public AccountService(ArchiDbContext context, IPasswordHasher<User> passwordHasher, AuthenticationSettings authenticationSettings)
+    public AccountService(
+        IPasswordHasher<User> passwordHasher, 
+        AuthenticationSettings authenticationSettings, 
+        IAccountRepository accountRepository
+        )
     {
-        _context = context;
         _passwordHasher = passwordHasher;
         _authenticationSettings = authenticationSettings;
+        _accountRepository = accountRepository;
     }
 
-    public string GenerateJwt(LoginDto dto)
+    public async Task<string> GenerateJwtAsync(LoginDto dto)
     {
-        var user = _context.Users
-                .Include(u => u.Role)
-                .FirstOrDefault(u => u.Email == dto.Email);
+        var user = new User()
+        {
+            Email = dto.Email,
+        };
+        var userResponse = await _accountRepository.GetUserAsync(user);
 
-        if (user is null)
+        if (userResponse is null)
         {
             throw new BadRequestException("Invalid username or password");
         }
-        var result = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password);
+        if (userResponse.PasswordHash is null)
+        {
+            throw new BadRequestException("Invalid username or password");
+        }
+        var result = _passwordHasher.VerifyHashedPassword(userResponse, userResponse.PasswordHash, dto.Password);
         if (result == PasswordVerificationResult.Failed)
         {
             throw new BadRequestException("Invalid username or password");
@@ -42,9 +51,9 @@ public class AccountService : IAccountService
 
         var claims = new List<Claim>()
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, $"{user.FirstName} {user.LastName}"),
-                new Claim(ClaimTypes.Role, $"{user.Role.Name}"),
+                new Claim(ClaimTypes.NameIdentifier, userResponse.Id.ToString()),
+                new Claim(ClaimTypes.Name, $"{userResponse.FirstName} {userResponse.LastName}"),
+                new Claim(ClaimTypes.Role, $"{userResponse.Role.Name}"),
             };
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_authenticationSettings.JwtKey));
         var cred = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -60,7 +69,7 @@ public class AccountService : IAccountService
         return tokenHandler.WriteToken(token);
     }
 
-    public void RegisterUser(RegisterUserDto dto)
+    public async Task RegisterUserAsync(RegisterUserDto dto)
     {
         var newUser = new User()
         {
@@ -72,7 +81,6 @@ public class AccountService : IAccountService
         };
         var hashedPassword = _passwordHasher.HashPassword(newUser, dto.Password);
         newUser.PasswordHash = hashedPassword;
-        _context.Users.Add(newUser);
-        _context.SaveChanges();
+        await _accountRepository.RegisterUserAsync(newUser);
     }
 }

@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Archi.Models.OrderModel;
+using Archi.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Phones.Controllers
+namespace Archi.Controllers
 {
     [ApiController]
     [Route("api/order")]
@@ -15,39 +17,39 @@ namespace Phones.Controllers
             _orderService = orderService;
         }
         [HttpGet]
-        public ActionResult<IEnumerable<OrderDto>> GetAll()
+        public async Task<ActionResult<IEnumerable<OrderDto>>> GetAllAsync()
         {
-            var brands = _orderService.GetAll();
+            var brands = await _orderService.GetAllAsync();
 
             return Ok(brands);
         }
         [Authorize]
         [HttpPost]
-        public ActionResult CreateOrder([FromBody] CreateOrderDto dto)
+        public async Task<ActionResult> CreateOrderAsync([FromBody] CreateOrderDto dto)
         {
-            var id = _orderService.CreateOrder(dto);
+            var id = await _orderService.CreateOrderAsync(dto);
             return Created($"/api/order/{id}", null);
         }
        
         [HttpGet("{id}")]
-        public ActionResult<OrderDto> Get([FromRoute] int id)
+        public async Task<ActionResult<OrderDto>> GetAsync([FromRoute] int id)
         {
-            var phone = _orderService.GetById(id);
+            var phone = await _orderService.GetByIdAsync(id);
 
             return Ok(phone);
         }
         [Authorize]
         [HttpPut("{id}")]
-        public ActionResult Update([FromBody] UpdateOrderDto dto, [FromRoute] int id)
+        public async Task<ActionResult> UpdateAsync([FromBody] UpdateOrderDto dto, [FromRoute] int id)
         {
-            _orderService.UpdateOrder(id, dto);
+            await _orderService.UpdateOrderAsync(id, dto);
             return Ok();
         }
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
-        public ActionResult Delete([FromRoute] int id)
+        public async Task<ActionResult> DeleteAsync([FromRoute] int id)
         {
-            _orderService.DeleteBrand(id);
+            await _orderService.DeleteOrderAsync(id);
             return NoContent();
         }
     }

@@ -10,15 +10,21 @@ public class DBSeeder
 
         _dbContext = dbContext;
     }
-    public void Seed()
+    public async Task SeedAsync()
     {
-        if (_dbContext.Database.CanConnect())
+        if (await _dbContext.Database.CanConnectAsync())
         {
             if (!_dbContext.Roles.Any())
             {
                 var roles = GetRoles();
-                _dbContext.Roles.AddRange(roles);
-                _dbContext.SaveChanges();
+                await _dbContext.Roles.AddRangeAsync(roles);
+                await _dbContext.SaveChangesAsync();
+            }
+            if (!_dbContext.Orders.Any())
+            {
+                var orders = GetOrders();
+                await _dbContext.Orders.AddRangeAsync(orders);
+                await _dbContext.SaveChangesAsync();
             }
         }
     }
@@ -38,5 +44,21 @@ public class DBSeeder
 
          };
         return roles;
+    }
+    private IEnumerable<Order> GetOrders()
+    {
+        var phones = new List<Order>()
+        {
+            new Order()
+            {
+                Name = "Test - 1",
+            },
+            new Order()
+            {
+                Name = "Test - 2",
+            }
+
+         };
+        return phones;
     }
 }

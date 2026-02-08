@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Archi.Models;
-using archi_api.Services.Account;
+using Archi.Services.Account;
 
 namespace Archi.Controllers
 {
@@ -16,15 +16,15 @@ namespace Archi.Controllers
            _accountService = accountService;
         }
         [HttpPost("register")]
-        public ActionResult RegisterUser([FromBody] RegisterUserDto dto)
+        public async Task<ActionResult> RegisterUserAsync([FromBody] RegisterUserDto dto)
         {
-            _accountService.RegisterUser(dto);
+            await _accountService.RegisterUserAsync(dto);
             return Ok();
         }
         [HttpPost("login")]
-        public ActionResult Login([FromBody] LoginDto dto)
+        public async Task<ActionResult> LoginAsync([FromBody] LoginDto dto)
         {
-            string token = _accountService.GenerateJwt(dto);
+            string token = await _accountService.GenerateJwtAsync(dto);
             return Ok(token);
         }
     }
